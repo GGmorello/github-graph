@@ -1,10 +1,9 @@
 import json
 from datetime import datetime, timedelta
 from github import Github
-from tqdm import tqdm
 
 # Read access token from .env file
-with open('/Users/gabrielemorello/Code/github-graph/src/.env') as f:
+with open('.env') as f:
     ACCESS_TOKEN = f.read().strip()
 
 # Replace with the repository you want to scrape
