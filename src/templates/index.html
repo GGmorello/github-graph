@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Graph Visualization</title>
+    <script src="https://d3js.org/d3.v6.min.js"></script>
+    <style>
+        .link {
+            stroke: rgb(177, 27, 27);
+            stroke-width: 2px;
+        }
+        .node {
+            fill: #000000;
+            stroke: #fff;
+            stroke-width: 1.5px;
+        }
+    </style>
+    
+</head>
+<body>
+
+    <div id="nodes-data" style="display:none;">{{ nodes|tojson|safe }}</div>
+    <div id="links-data" style="display:none;">{{ links|tojson|safe }}</div>
+    
+    <script>
+        // Fetching the data from the hidden divs
+        const nodesData = document.getElementById('nodes-data').textContent;
+        const linksData = document.getElementById('links-data').textContent;
+
+        console.log("Nodes Data:", nodesData);
+        console.log("Links Data:", linksData);
+    
+        const graph = {
+            nodes: JSON.parse(nodesData),
+            links: JSON.parse(linksData)
+        };
+
+
+        const width = window.innerWidth, height = window.innerHeight;
+
+const svg = d3.select("body").append("svg")
+    .attr("width", width)
+    .attr("height", height);
+
+// Create the simulation
+const simulation = d3.forceSimulation()
+    .force("link", d3.forceLink().id(d => d.id).distance(100))
+    .force("charge", d3.forceManyBody().strength(-400))
+    .force("center", d3.forceCenter(width / 2, height / 2));
+
+// Draw links first so they appear beneath nodes
+const link = svg.append("g")
+    .attr("class", "links")
+    .selectAll("line")
+    .data(graph.links)
+    .enter().append("line")
+    .attr("stroke", "#999")  // set a stroke color
+    .attr("stroke-opacity", 0.6);
+
+
+const node = svg.append("g")
+    .attr("class", "nodes")
+    .selectAll("circle")
+    .data(graph.nodes)
+    .enter().append("circle")
+    .attr("r", 10)
+    .call(d3.drag()
+        .on("start", dragstarted)
+        .on("drag", dragged)
+        .on("end", dragended));
+
+// Labels for nodes
+const nodeLabels = svg.append("g")
+    .attr("class", "node-labels")
+    .selectAll("text")
+    .data(graph.nodes)
+    .enter().append("text")
+    .text(d => d.id)
+    .attr("dx", 12)
+    .attr("dy", 4);
+
+// Labels for links (assuming links have a 'label' property)
+const linkLabels = svg.append("g")
+    .attr("class", "link-labels")
+    .selectAll("text")
+    .data(graph.links)
+    .enter().append("text")
+    .text(d => d.label)
+    .attr("font-size", "0.8em");
+
+
+// Now that our nodes and links are defined, set the graph data in the simulation
+simulation.nodes(graph.nodes).on("tick", ticked);
+simulation.force("link").links(graph.links);
+
+function ticked() {
+    link.attr("x1", d => d.source.x)
+        .attr("y1", d => d.source.y)
+        .attr("x2", d => d.target.x)
+        .attr("y2", d => d.target.y);
+
+    node.attr("cx", d => d.x)
+        .attr("cy", d => d.y);
+
+    nodeLabels.attr("x", d => d.x)
+        .attr("y", d => d.y);
+
+    linkLabels.attr("x", d => (d.source.x + d.target.x) / 2)
+        .attr("y", d => (d.source.y + d.target.y) / 2);
+}
+
+function dragstarted(event) {
+    if (!event.active) simulation.alphaTarget(0.3).restart();
+    event.subject.fx = event.subject.x;
+    event.subject.fy = event.subject.y;
+}
+
+function dragged(event) {
+    event.subject.fx = event.x;
+    event.subject.fy = event.y;
+}
+
+function dragended(event) {
+    if (!event.active) simulation.alphaTarget(0);
+    event.subject.fx = null;
+    event.subject.fy = null;
+}
+
+
+</script>
+</body>
+</html>
