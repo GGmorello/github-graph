@@ -5,17 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Graph Visualization</title>
     <script src="https://d3js.org/d3.v6.min.js"></script>
-    <style>
-        .link {
-            stroke: rgb(177, 27, 27);
-            stroke-width: 2px;
-        }
-        .node {
-            fill: #000000;
-            stroke: #fff;
-            stroke-width: 1.5px;
-        }
-    </style>
     
 </head>
 <body>
@@ -36,12 +25,24 @@
             links: JSON.parse(linksData)
         };
 
+        // Calculate dynamic sizes based on total number of nodes and links
+        const nodeSizeBase = 50;  // adjust this value as per your preference
+        const linkWidthBase = 6;  // adjust this value as per your preference
+        const nodeSize = nodeSizeBase / Math.sqrt(graph.nodes.length);
+        const linkWidth = linkWidthBase / Math.sqrt(graph.links.length);
+
 
         const width = window.innerWidth, height = window.innerHeight;
 
 const svg = d3.select("body").append("svg")
     .attr("width", width)
-    .attr("height", height);
+    .attr("height", height)
+    .call(d3.zoom().on("zoom", function () {
+        svg.attr("transform", d3.event.transform)
+     }));
+
+const graphContainer = svg.append("g");
+
 
 // Create the simulation
 const simulation = d3.forceSimulation()
@@ -50,44 +51,55 @@ const simulation = d3.forceSimulation()
     .force("center", d3.forceCenter(width / 2, height / 2));
 
 // Draw links first so they appear beneath nodes
-const link = svg.append("g")
+const link = graphContainer.append("g")
     .attr("class", "links")
     .selectAll("line")
     .data(graph.links)
     .enter().append("line")
-    .attr("stroke", "#999")  // set a stroke color
-    .attr("stroke-opacity", 0.6);
+    .attr("stroke", "#add8e6")  // set a stroke color
+    .attr("stroke-opacity", 0.6)
+    .attr("stroke-width", linkWidth);
 
 
-const node = svg.append("g")
+const node = graphContainer.append("g")
     .attr("class", "nodes")
     .selectAll("circle")
     .data(graph.nodes)
     .enter().append("circle")
-    .attr("r", 10)
+    .attr("r", nodeSize)
+    .attr("fill", "#00008b")  // set a fill color
+    .attr("stroke", "#fff")  // set a stroke color
     .call(d3.drag()
         .on("start", dragstarted)
         .on("drag", dragged)
         .on("end", dragended));
 
 // Labels for nodes
-const nodeLabels = svg.append("g")
+const nodeLabels = graphContainer.append("g")
     .attr("class", "node-labels")
     .selectAll("text")
     .data(graph.nodes)
     .enter().append("text")
     .text(d => d.id)
-    .attr("dx", 12)
-    .attr("dy", 4);
+    .attr("dx", -15)
+    .attr("dy", 15);
 
 // Labels for links (assuming links have a 'label' property)
-const linkLabels = svg.append("g")
+const linkLabels = graphContainer.append("g")
     .attr("class", "link-labels")
     .selectAll("text")
     .data(graph.links)
     .enter().append("text")
     .text(d => d.label)
     .attr("font-size", "0.8em");
+
+const zoom = d3.zoom()
+    .scaleExtent([0.1, 10])  // Minimum and maximum zoom scale
+    .on("zoom", zoomed);
+
+svg.call(zoom);
+
+
 
 
 // Now that our nodes and links are defined, set the graph data in the simulation
@@ -104,7 +116,7 @@ function ticked() {
         .attr("cy", d => d.y);
 
     nodeLabels.attr("x", d => d.x)
-        .attr("y", d => d.y);
+        .attr("y", d => d.y + 15);
 
     linkLabels.attr("x", d => (d.source.x + d.target.x) / 2)
         .attr("y", d => (d.source.y + d.target.y) / 2);
@@ -126,6 +138,11 @@ function dragended(event) {
     event.subject.fx = null;
     event.subject.fy = null;
 }
+
+function zoomed(event) {
+    graphContainer.attr("transform", event.transform);
+}
+
 
 
 </script>

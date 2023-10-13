@@ -9,7 +9,12 @@ data = {
     "user2": ["repo1", "repo3"],
     "user3": ["repo2", "repo4"],
     "user4": ["repo1", "repo5"],
-    "user4": ["repo2", "repo5"],
+    "user5": ["repo2", "repo5"],
+    "user6": ["repo4", "repo8"],
+    "user7": ["repo3", "repo5"],
+    "user8": ["repo5", "repo11"],
+    "user9": ["repo4", "repo51"],
+    "user10": ["repo5", "repo6"],
     #... add more data as needed
 }
 
