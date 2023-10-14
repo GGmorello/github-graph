@@ -12,10 +12,26 @@
     <div id="nodes-data" style="display:none;">{{ nodes|tojson|safe }}</div>
     <div id="links-data" style="display:none;">{{ links|tojson|safe }}</div>
     
+    <style>
+        .tooltip {
+          position: absolute;
+          text-align: center;
+          width: 120px;
+          height: 28px;
+          padding: 2px;
+          font: 12px sans-serif;
+          background: lightsteelblue;
+          border: 0px;
+          border-radius: 8px;
+          pointer-events: none;
+        }
+    </style>
+
     <script>
         // Fetching the data from the hidden divs
         const nodesData = document.getElementById('nodes-data').textContent;
         const linksData = document.getElementById('links-data').textContent;
+        
 
         console.log("Nodes Data:", nodesData);
         console.log("Links Data:", linksData);
@@ -30,6 +46,9 @@
         const linkWidthBase = 6;  // adjust this value as per your preference
         const nodeSize = nodeSizeBase / Math.sqrt(graph.nodes.length);
         const linkWidth = linkWidthBase / Math.sqrt(graph.links.length);
+        const maxDegree = d3.max(graph.nodes, d => d.degree);
+        const colorScale = d3.scaleSequential(d3.interpolateBlues).domain([0, maxDegree]);
+        const sizeScale = d3.scaleSqrt().domain([0, maxDegree]).range([10, 30]);
 
 
         const width = window.innerWidth, height = window.innerHeight;
@@ -66,13 +85,36 @@ const node = graphContainer.append("g")
     .selectAll("circle")
     .data(graph.nodes)
     .enter().append("circle")
-    .attr("r", nodeSize)
-    .attr("fill", "#00008b")  // set a fill color
+    .attr("r", d => sizeScale(d.degree))
+    .attr("fill", d => colorScale(d.degree))  // set a fill color
     .attr("stroke", "#fff")  // set a stroke color
     .call(d3.drag()
         .on("start", dragstarted)
         .on("drag", dragged)
         .on("end", dragended));
+
+
+const tooltip = d3.select("body").append("div")
+    .attr("class", "tooltip")
+    .style("opacity", 0);
+
+node.on("mouseover", function(event, d) {
+    tooltip.transition()
+        .duration(200)
+        .style("opacity", .9);
+    tooltip.html("Repo: " + d.id + "<br/>Degree: " + d.degree)
+        .style("left", (event.pageX) + "px")
+        .style("top", (event.pageY - 28) + "px");
+}).on("mouseout", function() {
+    tooltip.transition()
+        .duration(500)
+        .style("opacity", 0);
+});
+
+// Filtering
+// const minDegreeToShow = 2;  // Adjust this value as needed
+// node.style("display", d => d.degree < minDegreeToShow ? "none" : "");
+// nodeLabels.style("display", d => d.degree < minDegreeToShow ? "none" : "");
 
 // Labels for nodes
 const nodeLabels = graphContainer.append("g")
@@ -97,9 +139,43 @@ const zoom = d3.zoom()
     .scaleExtent([0.1, 10])  // Minimum and maximum zoom scale
     .on("zoom", zoomed);
 
+    link.attr("d", function(d) {
+    const dx = d.target.x - d.source.x,
+          dy = d.target.y - d.source.y,
+          dr = Math.sqrt(dx * dx + dy * dy);
+    return "M" + d.source.x + "," + d.source.y + "A" + dr + "," + dr + " 0 0,1 " + d.target.x + "," + d.target.y;
+});
+
 svg.call(zoom);
 
+// Interactive Legend
+const legendData = [1, Math.floor(maxDegree / 2), maxDegree];
+const legend = svg.append("g")
+    .selectAll("g")
+    .data(legendData)
+    .enter().append("g")
+    .attr("transform", (d, i) => `translate(0,${i * 30 + 20})`);
 
+legend.append("circle")
+    .attr("cx", 30)
+    .attr("cy", 0)
+    .attr("r", d => sizeScale(d))
+    .attr("fill", d => colorScale(d))
+    .on("click", function(event, d) {
+        node.style("display", n => n.degree < d ? "none" : "");
+        nodeLabels.style("display", n => n.degree < d ? "none" : "");
+    });
+
+legend.append("text")
+    .attr("x", 40)
+    .attr("y", 4)
+    .text(d => `Degree > ${d}`)
+    .style("font-size", "12px")
+    .attr("cursor", "pointer")
+    .on("click", function(event, d) {
+        node.style("display", n => n.degree < d ? "none" : "");
+        nodeLabels.style("display", n => n.degree < d ? "none" : "");
+    });
 
 
 // Now that our nodes and links are defined, set the graph data in the simulation

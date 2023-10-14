@@ -37,7 +37,7 @@ def visualize_graph():
                     repo_pair_users[(repo1, repo2)].append(user)
 
     # Extract nodes and links for visualization
-    nodes = [{"id": node, "group": 2} for node in G.nodes()]
+    nodes = [{"id": node, "group": 2, "degree": G.degree(node)} for node in G.nodes()]
     links = [
         {
             "source": edge[0],
@@ -46,16 +46,6 @@ def visualize_graph():
             "label": repo_pair_users[edge]  # Add the 'id' field here
         }
         for edge in G.edges()]
-
-    # Convert the graph to nodes and links for D3 visualization
-    # nodes = [{"id": node, "group": 1 if node in data else 2} for node in G.nodes()]
-    # links = [{"source": edge[0], "target": edge[1], "value": 1} for edge in G.edges()]
-
-
-    print("Nodes:", nodes)
-    print("Links:", links)
-    print(G)
-
 
     return render_template('index.html', nodes=nodes, links=links)
 
