@@ -1,22 +1,33 @@
 from flask import Flask, render_template
 import networkx as nx
-import json
+import random
 
 app = Flask(__name__)
 
-data = {
-    "user1": ["repo1", "repo2"],
-    "user2": ["repo1", "repo3"],
-    "user3": ["repo2", "repo4"],
-    "user4": ["repo1", "repo5"],
-    "user5": ["repo2", "repo5"],
-    "user6": ["repo4", "repo8"],
-    "user7": ["repo3", "repo5"],
-    "user8": ["repo5", "repo11"],
-    "user9": ["repo4", "repo51"],
-    "user10": ["repo5", "repo6"],
-    #... add more data as needed
-}
+user_names = [
+    "Alice", "Bob", "Charlie", "David", "Eve", "Frank", "Grace", "Hannah", 
+    "Isaac", "Jack", "Kylie", "Liam", "Mia", "Nathan", "Olivia", "Paul", 
+    "Quinn", "Rachel", "Steve", "Tracy", "Ursula", "Victor", "Whitney", 
+    "Xander", "Yara", "Zane", "Amber", "Brian", "Celine", "Derek", "Ella", 
+    "Finn", "Gloria", "Henry", "Ivy", "Joel", "Kim", "Lucas", "Mandy", "Neil", 
+    "Opal", "Pete", "Quincy", "Rita", "Sam", "Tina", "Ulysses", "Vera", "Walter"
+]
+
+# Tech keywords and general descriptors for generating repo names
+tech_keywords = ["Data", "AI", "Web", "App", "System", "Platform", "Net", "Node", "Base", "Tech", "Code", "Stack", "Flow", "Logic", "View", "Bit", "Byte", "Grid", "API", "Frame"]
+general_descriptors = ["Engine", "Manager", "Hub", "Analyzer", "Optimizer", "Tracker", "Interface", "Assistant", "Connector", "Resolver", "Generator", "Guide", "Insight", "Link", "Forge", "Composer", "Pilot", "Guard", "Craft", "Wise"]
+
+# Generate repository names
+repository_names = [f"{random.choice(tech_keywords)}{random.choice(general_descriptors)}" for _ in range(100)]
+repository_names = list(set(repository_names))  # Remove any duplicates
+
+# Randomly assign repositories to each user
+data = {}
+for user in user_names:
+    # Assign 2 to 6 repositories to each user for variety
+    num_repos = random.randint(2, 6)
+    repos = random.sample(repository_names, num_repos)
+    data[user] = repos
 
 @app.route('/')
 @app.route('/')
@@ -34,7 +45,9 @@ def visualize_graph():
                     G.add_edge(repo1, repo2)
                     repo_pair_users[(repo1, repo2)] = [user]
                 else:
-                    repo_pair_users[(repo1, repo2)].append(user)
+                    key = (repo1, repo2) if (repo1, repo2) in repo_pair_users else (repo2, repo1)
+                    repo_pair_users[key].append(user)
+
 
     # Extract nodes and links for visualization
     nodes = [{"id": node, "group": 2, "degree": G.degree(node)} for node in G.nodes()]
@@ -43,7 +56,7 @@ def visualize_graph():
             "source": edge[0],
             "target": edge[1],
             "value": 1,
-            "label": repo_pair_users[edge]  # Add the 'id' field here
+            "label": repo_pair_users.get(edge, [])  # Add the 'id' field here
         }
         for edge in G.edges()]
 
@@ -51,4 +64,5 @@ def visualize_graph():
 
 
 if __name__ == "__main__":
+    print(data)
     app.run(debug=True)

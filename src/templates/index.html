@@ -5,27 +5,31 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Graph Visualization</title>
     <script src="https://d3js.org/d3.v6.min.js"></script>
+
+    <style>
+        .tooltip {
+            position: absolute;
+            text-align: center;
+            width: 120px;
+            height: 28px;
+            padding: 2px;
+            font: 12px sans-serif;
+            background: lightsteelblue;
+            border: 0px;
+            border-radius: 8px;
+            pointer-events: none;
+        }
+    </style>
     
 </head>
 <body>
 
     <div id="nodes-data" style="display:none;">{{ nodes|tojson|safe }}</div>
     <div id="links-data" style="display:none;">{{ links|tojson|safe }}</div>
+
+    <input type="range" id="degreeFilter" min="0" max="10" step="1" value="0">
+    <label for="degreeFilter">Minimum Degree: <span id="degreeValue">0</span></label>
     
-    <style>
-        .tooltip {
-          position: absolute;
-          text-align: center;
-          width: 120px;
-          height: 28px;
-          padding: 2px;
-          font: 12px sans-serif;
-          background: lightsteelblue;
-          border: 0px;
-          border-radius: 8px;
-          pointer-events: none;
-        }
-    </style>
 
     <script>
         // Fetching the data from the hidden divs
@@ -43,7 +47,7 @@
 
         // Calculate dynamic sizes based on total number of nodes and links
         const nodeSizeBase = 50;  // adjust this value as per your preference
-        const linkWidthBase = 6;  // adjust this value as per your preference
+        const linkWidthBase = 8;  // adjust this value as per your preference
         const nodeSize = nodeSizeBase / Math.sqrt(graph.nodes.length);
         const linkWidth = linkWidthBase / Math.sqrt(graph.links.length);
         const maxDegree = d3.max(graph.nodes, d => d.degree);
@@ -62,11 +66,14 @@ const svg = d3.select("body").append("svg")
 
 const graphContainer = svg.append("g");
 
+// Increase to spread nodes apart, decrease if they are too spread out
+const nodeDistance = 100 + graph.nodes.length * 0.5;
+const chargeStrength = -400 - graph.nodes.length * 3;
 
 // Create the simulation
 const simulation = d3.forceSimulation()
-    .force("link", d3.forceLink().id(d => d.id).distance(100))
-    .force("charge", d3.forceManyBody().strength(-400))
+    .force("link", d3.forceLink().id(d => d.id).distance(nodeDistance))
+    .force("charge", d3.forceManyBody().strength(chargeStrength))
     .force("center", d3.forceCenter(width / 2, height / 2));
 
 // Draw links first so they appear beneath nodes
@@ -75,8 +82,8 @@ const link = graphContainer.append("g")
     .selectAll("line")
     .data(graph.links)
     .enter().append("line")
-    .attr("stroke", "#add8e6")  // set a stroke color
-    .attr("stroke-opacity", 0.6)
+    .attr("stroke", "#000")  // set a stroke color
+    .attr("stroke-opacity", 0.7)
     .attr("stroke-width", linkWidth);
 
 
@@ -111,10 +118,43 @@ node.on("mouseover", function(event, d) {
         .style("opacity", 0);
 });
 
-// Filtering
-// const minDegreeToShow = 2;  // Adjust this value as needed
-// node.style("display", d => d.degree < minDegreeToShow ? "none" : "");
-// nodeLabels.style("display", d => d.degree < minDegreeToShow ? "none" : "");
+let currentHighlightedNode = null;
+
+node.on("click", function(event, d) {
+    // If there's a previously highlighted node, reset its opacity
+    if (currentHighlightedNode) {
+        node.style('opacity', 1);
+        link.style('opacity', 1);
+        nodeLabels.style('opacity', 1);
+        
+        if (currentHighlightedNode === d) {
+            // If the clicked node is the same as the currently highlighted node, stop here
+            currentHighlightedNode = null;
+            return;
+        }
+    }
+
+    node.style('opacity', 0.1);
+    link.style('opacity', 0.1);
+    nodeLabels.style('opacity', 0.1);
+
+    // Highlight the clicked node
+    d3.select(this).style('opacity', 1);
+
+    // Highlight its neighbors
+    let connectedNodes = [];
+    link.each(function(l) {
+        if (l.source === d || l.target === d) {
+            d3.select(this).style('opacity', 1);
+            connectedNodes.push(l.source === d ? l.target : l.source);
+        }
+    });
+
+    node.filter(n => connectedNodes.includes(n)).style('opacity', 1);
+    nodeLabels.filter(n => connectedNodes.includes(n)).style('opacity', 1);
+
+    currentHighlightedNode = d;
+});
 
 // Labels for nodes
 const nodeLabels = graphContainer.append("g")
@@ -125,15 +165,6 @@ const nodeLabels = graphContainer.append("g")
     .text(d => d.id)
     .attr("dx", -15)
     .attr("dy", 15);
-
-// Labels for links (assuming links have a 'label' property)
-const linkLabels = graphContainer.append("g")
-    .attr("class", "link-labels")
-    .selectAll("text")
-    .data(graph.links)
-    .enter().append("text")
-    .text(d => d.label)
-    .attr("font-size", "0.8em");
 
 const zoom = d3.zoom()
     .scaleExtent([0.1, 10])  // Minimum and maximum zoom scale
@@ -154,7 +185,7 @@ const legend = svg.append("g")
     .selectAll("g")
     .data(legendData)
     .enter().append("g")
-    .attr("transform", (d, i) => `translate(0,${i * 30 + 20})`);
+    .attr("transform", (d, i) => `translate(0,${i * 60 + 40})`);
 
 legend.append("circle")
     .attr("cx", 30)
@@ -167,7 +198,7 @@ legend.append("circle")
     });
 
 legend.append("text")
-    .attr("x", 40)
+    .attr("x", 70)
     .attr("y", 4)
     .text(d => `Degree > ${d}`)
     .style("font-size", "12px")
@@ -177,6 +208,17 @@ legend.append("text")
         nodeLabels.style("display", n => n.degree < d ? "none" : "");
     });
 
+const degreeSlider = document.getElementById("degreeFilter");
+const degreeValueLabel = document.getElementById("degreeValue");
+
+degreeSlider.max = maxDegree;
+degreeSlider.addEventListener("input", function() {
+    const filterValue = +this.value;
+    degreeValueLabel.textContent = filterValue;
+    
+    node.style("display", n => n.degree < filterValue ? "none" : "");
+    nodeLabels.style("display", n => n.degree < filterValue ? "none" : "");
+});
 
 // Now that our nodes and links are defined, set the graph data in the simulation
 simulation.nodes(graph.nodes).on("tick", ticked);
@@ -192,10 +234,10 @@ function ticked() {
         .attr("cy", d => d.y);
 
     nodeLabels.attr("x", d => d.x)
-        .attr("y", d => d.y + 15);
+        .attr("y", d => d.y + 5 + sizeScale(d.degree));
 
-    linkLabels.attr("x", d => (d.source.x + d.target.x) / 2)
-        .attr("y", d => (d.source.y + d.target.y) / 2);
+    // linkLabels.attr("x", d => (d.source.x + d.target.x) / 2)
+    //     .attr("y", d => (d.source.y + d.target.y) / 2);
 }
 
 function dragstarted(event) {
