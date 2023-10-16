@@ -1,5 +1,6 @@
 import argparse
 import json
+import os
 from datetime import datetime, timedelta
 from github import Github, GithubException
 from tqdm import tqdm
@@ -81,6 +82,8 @@ def scrape_commits(option, repo, commit_data):
 
 def write_commit_data(commit_data, repo_name):
     repo_name = repo_name.replace('/', '_')
+    if not os.path.exists('data/' + repo_name):
+        os.makedirs('data/' + repo_name)
     with open('data/' + repo_name + '/commits.json', 'w') as f:
         json.dump(commit_data, f, indent=4)
 
