@@ -159,3 +159,11 @@ cython_debug/
 #  option (not recommended) you can uncomment the following to ignore the entire idea folder.
 #.idea/
 .vscode/
+
+# Ignore input/output/checkpoint folders for streaming
+src/input_files/*
+src/output_files/*
+src/checkpoints/*
+
+.DS_Store
+**/.DS_Store
