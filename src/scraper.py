@@ -99,7 +99,7 @@ def analyze_users(repo_name):
         users[commit['author']] += 1
     with open('data/' + repo_name + '/users.json', 'w') as f:
         json.dump(users, f, indent=4)
-    
+
 
 
 def main():
@@ -110,11 +110,13 @@ def main():
     args = parser.parse_args()
 
     access_token = args.access_token or read_access_token()
+    # for repo_name in args.repo_names:
+    #     repo = get_repo(repo_name, access_token)
+    #     commit_data = load_commit_data()
+    #     scrape_commits(args.option, repo, commit_data)
+    #     write_commit_data(commit_data, repo_name)
     for repo_name in args.repo_names:
-        repo = get_repo(repo_name, access_token)
-        commit_data = load_commit_data()
-        scrape_commits(args.option, repo, commit_data)
-        write_commit_data(commit_data, repo_name)
+        analyze_users(repo_name)
 
 
 if __name__ == '__main__':
