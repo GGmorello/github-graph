@@ -29,9 +29,10 @@ def extract_commit_data(commit, repo_name):
         return None
 
 
-def load_commit_data():
+def load_commit_data(repo_name):
     try:
-        with open('commits.json', 'r') as f:
+        repo_name = repo_name.replace('/', '_')
+        with open('data/' + repo_name + 'commits.json', 'r') as f:
             return json.load(f)
     except FileNotFoundError:
         return []
@@ -88,17 +89,18 @@ def write_commit_data(commit_data, repo_name):
         json.dump(commit_data, f, indent=4)
 
 
-def analyze_users(repo_name):
-    repo_name = repo_name.replace('/', '_')
-    with open('data/' + repo_name + '/commits.json', 'r') as f:
-        commit_data = json.load(f)
-    users = {}
-    for commit in commit_data:
-        if commit['author'] not in users:
-            users[commit['author']] = 0
-        users[commit['author']] += 1
-    with open('data/' + repo_name + '/users.json', 'w') as f:
-        json.dump(users, f, indent=4)
+def analyze_users():
+    for repo_name in os.listdir('data'):
+        with open('data/' + repo_name + '/commits.json', 'r') as f:
+            commit_data = json.load(f)
+        users = {}
+        for commit in commit_data:
+            if commit['author'] not in users:
+                users[commit['author']] = 0
+            users[commit['author']] += 1
+        with open('data/' + repo_name + '/users.json', 'w') as f:
+            json.dump(users, f, indent=4)
+        
 
 
 
@@ -110,15 +112,14 @@ def main():
     args = parser.parse_args()
 
     access_token = args.access_token or read_access_token()
-    # for repo_name in args.repo_names:
-    #     repo = get_repo(repo_name, access_token)
-    #     commit_data = load_commit_data()
-    #     scrape_commits(args.option, repo, commit_data)
-    #     write_commit_data(commit_data, repo_name)
     for repo_name in args.repo_names:
-        analyze_users(repo_name)
+        repo = get_repo(repo_name, access_token)
+        commit_data = load_commit_data(repo_name)
+        scrape_commits(args.option, repo, commit_data)
+        write_commit_data(commit_data, repo_name)
+        analyze_users()
 
 
 if __name__ == '__main__':
-    main()
+    analyze_users()
 
