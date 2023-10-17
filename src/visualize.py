@@ -56,7 +56,7 @@ def visualize_graph():
             "source": edge[0],
             "target": edge[1],
             "value": 1,
-            "label": repo_pair_users.get(edge, [])  # Add the 'id' field here
+            "label": repo_pair_users.get(edge, [])
         }
         for edge in G.edges()]
 
@@ -64,5 +64,4 @@ def visualize_graph():
 
 
 if __name__ == "__main__":
-    print(data)
     app.run(debug=True)

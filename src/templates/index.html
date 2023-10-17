@@ -35,10 +35,6 @@
         // Fetching the data from the hidden divs
         const nodesData = document.getElementById('nodes-data').textContent;
         const linksData = document.getElementById('links-data').textContent;
-        
-
-        console.log("Nodes Data:", nodesData);
-        console.log("Links Data:", linksData);
     
         const graph = {
             nodes: JSON.parse(nodesData),
@@ -67,8 +63,8 @@ const svg = d3.select("body").append("svg")
 const graphContainer = svg.append("g");
 
 // Increase to spread nodes apart, decrease if they are too spread out
-const nodeDistance = 100 + graph.nodes.length * 0.5;
-const chargeStrength = -400 - graph.nodes.length * 3;
+const nodeDistance = 100 + graph.nodes.length * 0.7;
+const chargeStrength = -400 - graph.nodes.length * 5;
 
 // Create the simulation
 const simulation = d3.forceSimulation()
