@@ -121,5 +121,4 @@ def main():
 
 
 if __name__ == '__main__':
-    analyze_users()
-
+    main()
