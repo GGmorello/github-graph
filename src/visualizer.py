@@ -54,24 +54,24 @@ def visualize_graph():
                 if not G.has_node(repo2):
                     G.add_node(repo2)
                 if not G.has_edge(repo1, repo2):
-                    G.add_edge(repo1, repo2)
+                    G.add_edge(repo1, repo2, weight=1)
                     repo_pair_users[(repo1, repo2)] = [user]
                 else:
                     key = (repo1, repo2) if (repo1, repo2) in repo_pair_users else (repo2, repo1)
                     repo_pair_users[key].append(user)
+                    G[repo1][repo2]["weight"] += 1
 
-
-    # Extract nodes and links for visualization
+    # Extract nodes and links to pass them to index.html
     nodes = [{"id": node, "group": 2, "degree": G.degree(node)} for node in G.nodes()]
     links = [
         {
             "source": edge[0],
             "target": edge[1],
-            "value": 1,
+            "weight": G[edge[0]][edge[1]]["weight"],
             "label": repo_pair_users.get(edge, [])
         }
         for edge in G.edges()]
-    
+            
     return render_template('index.html', nodes=nodes, links=links)
 
 @app.route("/append",methods=['POST'])
@@ -88,5 +88,5 @@ def append():
     return []
 
 if __name__ == "__main__":
-    # data = create_mock_data()
+    data = create_mock_data()
     app.run(debug=True)

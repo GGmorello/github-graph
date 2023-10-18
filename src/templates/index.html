@@ -29,6 +29,10 @@
 
     <input type="range" id="degreeFilter" min="0" max="10" step="1" value="0">
     <label for="degreeFilter">Minimum Degree: <span id="degreeValue">0</span></label>
+
+    <input type="range" id="linkWeightFilter" min="0" max="10" step="1" value="0">
+    <label for="linkWeightFilter">Minimum Link Weight: <span id="linkWeightValue">0</span></label>
+
     
 
     <script>
@@ -42,13 +46,15 @@
         };
 
         // Calculate dynamic sizes based on total number of nodes and links
-        const nodeSizeBase = 50;  // adjust this value as per your preference
-        const linkWidthBase = 8;  // adjust this value as per your preference
+        const nodeSizeBase = 50;  
+        const linkWidthBase = 8;  
         const nodeSize = nodeSizeBase / Math.sqrt(graph.nodes.length);
         const linkWidth = linkWidthBase / Math.sqrt(graph.links.length);
         const maxDegree = d3.max(graph.nodes, d => d.degree);
+        const maxLinkWeight = d3.max(graph.links, d => d.weight);
         const colorScale = d3.scaleSequential(d3.interpolateBlues).domain([0, maxDegree]);
         const sizeScale = d3.scaleSqrt().domain([0, maxDegree]).range([10, 30]);
+        const linkWidthScale = d3.scaleSqrt().domain([0, maxLinkWeight]).range([0, 1]);
 
 
         const width = window.innerWidth, height = window.innerHeight;
@@ -80,7 +86,29 @@ const link = graphContainer.append("g")
     .enter().append("line")
     .attr("stroke", "#000")  // set a stroke color
     .attr("stroke-opacity", 0.7)
-    .attr("stroke-width", linkWidth);
+    .attr("stroke-width", d => linkWidthScale(d.weight));
+
+// LinkOverlay to make it easier to select the link with the mouse
+const linkOverlay = graphContainer.append("g")
+    .attr("class", "link-overlays")
+    .selectAll("line")
+    .data(graph.links)
+    .enter().append("line")
+    .attr("stroke", "#000")  
+    .attr("stroke-opacity", 0)
+    .attr("stroke-width", d => linkWidthScale(d.weight)+5)
+    .on("mouseover", function(event, d) {
+        tooltip.transition()
+            .duration(200)
+            .style("opacity", .9);
+        tooltip.html("Weight: " + d.weight)
+            .style("left", (event.pageX) + "px")
+            .style("top", (event.pageY - 28) + "px");
+}).on("mouseout", function(event) {
+        tooltip.transition()
+            .duration(500)
+            .style("opacity", 0);
+    });
 
 
 const node = graphContainer.append("g")
@@ -113,6 +141,20 @@ node.on("mouseover", function(event, d) {
         .duration(500)
         .style("opacity", 0);
 });
+
+link.on("mouseover", function(event, d) {
+    tooltip.transition()
+        .duration(200)
+        .style("opacity", .9);
+    tooltip.html("Weight: " + d.weight)
+        .style("left", (event.pageX) + "px")
+        .style("top", (event.pageY - 28) + "px");
+}).on("mouseout", function() {
+    tooltip.transition()
+        .duration(500)
+        .style("opacity", 0);
+});
+
 
 let currentHighlightedNode = null;
 
@@ -216,6 +258,17 @@ degreeSlider.addEventListener("input", function() {
     nodeLabels.style("display", n => n.degree < filterValue ? "none" : "");
 });
 
+const linkWeightSlider = document.getElementById("linkWeightFilter");
+const linkWeightValueLabel = document.getElementById("linkWeightValue");
+
+linkWeightSlider.addEventListener("input", function() {
+    const filterValue = +this.value;
+    linkWeightValueLabel.textContent = filterValue;
+    
+    link.style("display", l => l.weight < filterValue ? "none" : "");
+});
+
+
 // Now that our nodes and links are defined, set the graph data in the simulation
 simulation.nodes(graph.nodes).on("tick", ticked);
 simulation.force("link").links(graph.links);
@@ -226,14 +279,18 @@ function ticked() {
         .attr("x2", d => d.target.x)
         .attr("y2", d => d.target.y);
 
+    linkOverlay.attr("x1", d => d.source.x)
+        .attr("y1", d => d.source.y)
+        .attr("x2", d => d.target.x)
+        .attr("y2", d => d.target.y);
+
     node.attr("cx", d => d.x)
         .attr("cy", d => d.y);
 
     nodeLabels.attr("x", d => d.x)
         .attr("y", d => d.y + 5 + sizeScale(d.degree));
 
-    // linkLabels.attr("x", d => (d.source.x + d.target.x) / 2)
-    //     .attr("y", d => (d.source.y + d.target.y) / 2);
+    
 }
 
 function dragstarted(event) {
