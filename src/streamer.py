@@ -11,8 +11,8 @@ spark = SparkSession.builder \
     .appName("GitHubCommitProcessing") \
     .getOrCreate()
 
-input_directory = "input_files"
-input_directory_match = join(input_directory, "/*")
+input_directory = "input_files/*"
+# input_directory_match = join(input_directory, "/*")
 output_directory = "output_files"
 checkpoint_directory = "checkpoints"
 
@@ -24,7 +24,7 @@ watermark_col = "date"
 watermark_duration = "4 weeks"
 
 q = spark.readStream \
-    .json(input_directory_match, "repo STRING, author STRING, date TIMESTAMP", multiLine=True) \
+    .json(input_directory, "repo STRING, author STRING, date TIMESTAMP", multiLine=True) \
     .withWatermark(watermark_col, watermark_duration) \
     .groupBy(["author", "repo", expr("window(" + watermark_col + ", '" + watermark_duration + "')")]) \
     .count() \

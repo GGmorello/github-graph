@@ -23,7 +23,7 @@ def export_files():
         if (isfile(join(output_file_path, f)) and
             re.search(file_pattern_regex, f) != None):
             send_file_contents(join(output_file_path, f))
-            time.sleep(0.3)
+            # time.sleep(0.3)
 
 # Exports the output files from the stream to the visualization API
 if __name__ == "__main__":
