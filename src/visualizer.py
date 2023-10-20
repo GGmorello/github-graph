@@ -6,12 +6,6 @@ app = Flask(__name__)
 
 data = {}
 
-def store_data_on_disk():
-    return "todo"
-
-def load_data_from_disk():
-    return []
-
 def create_mock_data():
     user_names = [
         "Alice", "Bob", "Charlie", "David", "Eve", "Frank", "Grace", "Hannah", 
@@ -88,5 +82,5 @@ def append():
     return []
 
 if __name__ == "__main__":
-    data = create_mock_data()
+    # data = create_mock_data()
     app.run(debug=True)
