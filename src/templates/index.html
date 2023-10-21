@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -20,8 +21,9 @@
             pointer-events: none;
         }
     </style>
-    
+
 </head>
+
 <body>
 
     <div id="nodes-data" style="display:none;">{{ nodes|tojson|safe }}</div>
@@ -33,21 +35,19 @@
     <input type="range" id="linkWeightFilter" min="0" max="10" step="1" value="0">
     <label for="linkWeightFilter">Minimum Link Weight: <span id="linkWeightValue">0</span></label>
 
-    
+
 
     <script>
-        // Fetching the data from the hidden divs
         const nodesData = document.getElementById('nodes-data').textContent;
         const linksData = document.getElementById('links-data').textContent;
-    
+
         const graph = {
             nodes: JSON.parse(nodesData),
             links: JSON.parse(linksData)
         };
 
-        // Calculate dynamic sizes based on total number of nodes and links
-        const nodeSizeBase = 40;  
-        const linkWidthBase = 8;  
+        const nodeSizeBase = 40;
+        const linkWidthBase = 8;
         const nodeSize = nodeSizeBase / Math.sqrt(graph.nodes.length);
         const linkWidth = linkWidthBase / Math.sqrt(graph.links.length);
         const maxDegree = d3.max(graph.nodes, d => d.degree);
@@ -59,263 +59,254 @@
 
         const width = window.innerWidth, height = window.innerHeight;
 
-const svg = d3.select("body").append("svg")
-    .attr("width", width)
-    .attr("height", height)
-    .call(d3.zoom().on("zoom", function () {
-        svg.attr("transform", d3.event.transform)
-     }));
+        const svg = d3.select("body").append("svg")
+            .attr("width", width)
+            .attr("height", height)
+            .call(d3.zoom().on("zoom", function () {
+                svg.attr("transform", d3.event.transform)
+            }));
 
-const graphContainer = svg.append("g");
+        const graphContainer = svg.append("g");
 
-// Increase to spread nodes apart, decrease if they are too spread out
-const nodeDistance = 100 + graph.nodes.length * 2;
-const chargeStrength = -400 - graph.nodes.length * 17;
+        // Increase to spread nodes apart, decrease if they are too spread out
+        const nodeDistance = 100 + graph.nodes.length * 2;
+        const chargeStrength = -400 - graph.nodes.length * 17;
 
-// Create the simulation
-const simulation = d3.forceSimulation()
-    .force("link", d3.forceLink().id(d => d.id).distance(nodeDistance))
-    .force("charge", d3.forceManyBody().strength(chargeStrength))
-    .force("center", d3.forceCenter(width / 2, height / 2));
+        const simulation = d3.forceSimulation()
+            .force("link", d3.forceLink().id(d => d.id).distance(nodeDistance))
+            .force("charge", d3.forceManyBody().strength(chargeStrength))
+            .force("center", d3.forceCenter(width / 2, height / 2));
 
-// Draw links first so they appear beneath nodes
-const link = graphContainer.append("g")
-    .attr("class", "links")
-    .selectAll("line")
-    .data(graph.links)
-    .enter().append("line")
-    .attr("stroke", "#000")  // set a stroke color
-    .attr("stroke-opacity", 0.7)
-    .attr("stroke-width", d => linkWidthScale(d.weight));
+        const link = graphContainer.append("g")
+            .attr("class", "links")
+            .selectAll("line")
+            .data(graph.links)
+            .enter().append("line")
+            .attr("stroke", "#000")
+            .attr("stroke-opacity", 0.7)
+            .attr("stroke-width", d => linkWidthScale(d.weight));
 
-// LinkOverlay to make it easier to select the link with the mouse
-const linkOverlay = graphContainer.append("g")
-    .attr("class", "link-overlays")
-    .selectAll("line")
-    .data(graph.links)
-    .enter().append("line")
-    .attr("stroke", "#000")  
-    .attr("stroke-opacity", 0)
-    .attr("stroke-width", d => linkWidthScale(d.weight)+5)
-    .on("mouseover", function(event, d) {
-        tooltip.transition()
-            .duration(200)
-            .style("opacity", .9);
-        tooltip.html("Weight: " + d.weight)
-            .style("left", (event.pageX) + "px")
-            .style("top", (event.pageY - 28) + "px");
-}).on("mouseout", function(event) {
-        tooltip.transition()
-            .duration(500)
+
+        const linkOverlay = graphContainer.append("g")
+            .attr("class", "link-overlays")
+            .selectAll("line")
+            .data(graph.links)
+            .enter().append("line")
+            .attr("stroke", "#000")
+            .attr("stroke-opacity", 0)
+            .attr("stroke-width", d => linkWidthScale(d.weight) + 5)
+            .on("mouseover", function (event, d) {
+                tooltip.transition()
+                    .duration(200)
+                    .style("opacity", .9);
+                tooltip.html("Weight: " + d.weight)
+                    .style("left", (event.pageX) + "px")
+                    .style("top", (event.pageY - 28) + "px");
+            }).on("mouseout", function (event) {
+                tooltip.transition()
+                    .duration(500)
+                    .style("opacity", 0);
+            });
+
+
+        const node = graphContainer.append("g")
+            .attr("class", "nodes")
+            .selectAll("circle")
+            .data(graph.nodes)
+            .enter().append("circle")
+            .attr("r", d => sizeScale(d.degree))
+            .attr("fill", d => colorScale(d.degree))
+            .attr("stroke", "#fff")
+            .call(d3.drag()
+                .on("start", dragstarted)
+                .on("drag", dragged)
+                .on("end", dragended));
+
+
+        const tooltip = d3.select("body").append("div")
+            .attr("class", "tooltip")
             .style("opacity", 0);
-    });
+
+        node.on("mouseover", function (event, d) {
+            tooltip.transition()
+                .duration(200)
+                .style("opacity", .9);
+            tooltip.html("Repo: " + d.id + "<br/>Degree: " + d.degree)
+                .style("left", (event.pageX) + "px")
+                .style("top", (event.pageY - 28) + "px");
+        }).on("mouseout", function () {
+            tooltip.transition()
+                .duration(500)
+                .style("opacity", 0);
+        });
+
+        link.on("mouseover", function (event, d) {
+            tooltip.transition()
+                .duration(200)
+                .style("opacity", .9);
+            tooltip.html("Weight: " + d.weight)
+                .style("left", (event.pageX) + "px")
+                .style("top", (event.pageY - 28) + "px");
+        }).on("mouseout", function () {
+            tooltip.transition()
+                .duration(500)
+                .style("opacity", 0);
+        });
 
 
-const node = graphContainer.append("g")
-    .attr("class", "nodes")
-    .selectAll("circle")
-    .data(graph.nodes)
-    .enter().append("circle")
-    .attr("r", d => sizeScale(d.degree))
-    .attr("fill", d => colorScale(d.degree))  // set a fill color
-    .attr("stroke", "#fff")  // set a stroke color
-    .call(d3.drag()
-        .on("start", dragstarted)
-        .on("drag", dragged)
-        .on("end", dragended));
+        let currentHighlightedNode = null;
 
+        node.on("click", function (event, d) {
+            if (currentHighlightedNode) {
+                node.style('opacity', 1);
+                link.style('opacity', 1);
+                nodeLabels.style('opacity', 1);
 
-const tooltip = d3.select("body").append("div")
-    .attr("class", "tooltip")
-    .style("opacity", 0);
+                if (currentHighlightedNode === d) {
+                    currentHighlightedNode = null;
+                    return;
+                }
+            }
 
-node.on("mouseover", function(event, d) {
-    tooltip.transition()
-        .duration(200)
-        .style("opacity", .9);
-    tooltip.html("Repo: " + d.id + "<br/>Degree: " + d.degree)
-        .style("left", (event.pageX) + "px")
-        .style("top", (event.pageY - 28) + "px");
-}).on("mouseout", function() {
-    tooltip.transition()
-        .duration(500)
-        .style("opacity", 0);
-});
+            node.style('opacity', 0.1);
+            link.style('opacity', 0.1);
+            nodeLabels.style('opacity', 0.1);
 
-link.on("mouseover", function(event, d) {
-    tooltip.transition()
-        .duration(200)
-        .style("opacity", .9);
-    tooltip.html("Weight: " + d.weight)
-        .style("left", (event.pageX) + "px")
-        .style("top", (event.pageY - 28) + "px");
-}).on("mouseout", function() {
-    tooltip.transition()
-        .duration(500)
-        .style("opacity", 0);
-});
-
-
-let currentHighlightedNode = null;
-
-node.on("click", function(event, d) {
-    // If there's a previously highlighted node, reset its opacity
-    if (currentHighlightedNode) {
-        node.style('opacity', 1);
-        link.style('opacity', 1);
-        nodeLabels.style('opacity', 1);
-        
-        if (currentHighlightedNode === d) {
-            // If the clicked node is the same as the currently highlighted node, stop here
-            currentHighlightedNode = null;
-            return;
-        }
-    }
-
-    node.style('opacity', 0.1);
-    link.style('opacity', 0.1);
-    nodeLabels.style('opacity', 0.1);
-
-    // Highlight the clicked node
-    d3.select(this).style('opacity', 1);
-
-    // Highlight its neighbors
-    let connectedNodes = [];
-    link.each(function(l) {
-        if (l.source === d || l.target === d) {
             d3.select(this).style('opacity', 1);
-            connectedNodes.push(l.source === d ? l.target : l.source);
+
+            let connectedNodes = [];
+            link.each(function (l) {
+                if (l.source === d || l.target === d) {
+                    d3.select(this).style('opacity', 1);
+                    connectedNodes.push(l.source === d ? l.target : l.source);
+                }
+            });
+
+            node.filter(n => connectedNodes.includes(n)).style('opacity', 1);
+            nodeLabels.filter(n => connectedNodes.includes(n)).style('opacity', 1);
+
+            currentHighlightedNode = d;
+        });
+
+        const nodeLabels = graphContainer.append("g")
+            .attr("class", "node-labels")
+            .selectAll("text")
+            .data(graph.nodes)
+            .enter().append("text")
+            .text(d => (d.id.split("/")[1].length > 15) ? d.id.split("/")[1].substring(0, 12) + "..." : d.id.split("/")[1])
+            .attr("dx", -15)
+            .attr("dy", 15);
+
+        const zoom = d3.zoom()
+            .scaleExtent([0.1, 10])
+            .on("zoom", zoomed);
+
+        link.attr("d", function (d) {
+            const dx = d.target.x - d.source.x,
+                dy = d.target.y - d.source.y,
+                dr = Math.sqrt(dx * dx + dy * dy);
+            return "M" + d.source.x + "," + d.source.y + "A" + dr + "," + dr + " 0 0,1 " + d.target.x + "," + d.target.y;
+        });
+
+        svg.call(zoom);
+
+        const legendData = [1, Math.floor(maxDegree / 2), maxDegree];
+        const legend = svg.append("g")
+            .selectAll("g")
+            .data(legendData)
+            .enter().append("g")
+            .attr("transform", (d, i) => `translate(0,${i * 60 + 40})`);
+
+        legend.append("circle")
+            .attr("cx", 30)
+            .attr("cy", 0)
+            .attr("r", d => sizeScale(d))
+            .attr("fill", d => colorScale(d))
+            .on("click", function (event, d) {
+                node.style("display", n => n.degree < d ? "none" : "");
+                nodeLabels.style("display", n => n.degree < d ? "none" : "");
+            });
+
+        legend.append("text")
+            .attr("x", 70)
+            .attr("y", 4)
+            .text(d => `Degree > ${d}`)
+            .style("font-size", "12px")
+            .attr("cursor", "pointer")
+            .on("click", function (event, d) {
+                node.style("display", n => n.degree < d ? "none" : "");
+                nodeLabels.style("display", n => n.degree < d ? "none" : "");
+            });
+
+        const degreeSlider = document.getElementById("degreeFilter");
+        const degreeValueLabel = document.getElementById("degreeValue");
+
+        degreeSlider.max = maxDegree;
+        degreeSlider.addEventListener("input", function () {
+            const filterValue = +this.value;
+            degreeValueLabel.textContent = filterValue;
+
+            node.style("display", n => n.degree < filterValue ? "none" : "");
+            nodeLabels.style("display", n => n.degree < filterValue ? "none" : "");
+        });
+
+        const linkWeightSlider = document.getElementById("linkWeightFilter");
+        const linkWeightValueLabel = document.getElementById("linkWeightValue");
+
+        linkWeightSlider.addEventListener("input", function () {
+            const filterValue = +this.value;
+            linkWeightValueLabel.textContent = filterValue;
+
+            link.style("display", l => l.weight < filterValue ? "none" : "");
+        });
+
+
+        simulation.nodes(graph.nodes).on("tick", ticked);
+        simulation.force("link").links(graph.links);
+
+        function ticked() {
+            link.attr("x1", d => d.source.x)
+                .attr("y1", d => d.source.y)
+                .attr("x2", d => d.target.x)
+                .attr("y2", d => d.target.y);
+
+            linkOverlay.attr("x1", d => d.source.x)
+                .attr("y1", d => d.source.y)
+                .attr("x2", d => d.target.x)
+                .attr("y2", d => d.target.y);
+
+            node.attr("cx", d => d.x)
+                .attr("cy", d => d.y);
+
+            nodeLabels.attr("x", d => d.x)
+                .attr("y", d => d.y + 5 + sizeScale(d.degree));
+
+
         }
-    });
 
-    node.filter(n => connectedNodes.includes(n)).style('opacity', 1);
-    nodeLabels.filter(n => connectedNodes.includes(n)).style('opacity', 1);
+        function dragstarted(event) {
+            if (!event.active) simulation.alphaTarget(0.3).restart();
+            event.subject.fx = event.subject.x;
+            event.subject.fy = event.subject.y;
+        }
 
-    currentHighlightedNode = d;
-});
+        function dragged(event) {
+            event.subject.fx = event.x;
+            event.subject.fy = event.y;
+        }
 
-// Labels for nodes
-const nodeLabels = graphContainer.append("g")
-    .attr("class", "node-labels")
-    .selectAll("text")
-    .data(graph.nodes)
-    .enter().append("text")
-    .text(d => (d.id.split("/")[1].length > 15) ? d.id.split("/")[1].substring(0, 12) + "..." : d.id.split("/")[1])
-    .attr("dx", -15)
-    .attr("dy", 15);
+        function dragended(event) {
+            if (!event.active) simulation.alphaTarget(0);
+            event.subject.fx = null;
+            event.subject.fy = null;
+        }
 
-const zoom = d3.zoom()
-    .scaleExtent([0.1, 10])  // Minimum and maximum zoom scale
-    .on("zoom", zoomed);
-
-    link.attr("d", function(d) {
-    const dx = d.target.x - d.source.x,
-          dy = d.target.y - d.source.y,
-          dr = Math.sqrt(dx * dx + dy * dy);
-    return "M" + d.source.x + "," + d.source.y + "A" + dr + "," + dr + " 0 0,1 " + d.target.x + "," + d.target.y;
-});
-
-svg.call(zoom);
-
-// Interactive Legend
-const legendData = [1, Math.floor(maxDegree / 2), maxDegree];
-const legend = svg.append("g")
-    .selectAll("g")
-    .data(legendData)
-    .enter().append("g")
-    .attr("transform", (d, i) => `translate(0,${i * 60 + 40})`);
-
-legend.append("circle")
-    .attr("cx", 30)
-    .attr("cy", 0)
-    .attr("r", d => sizeScale(d))
-    .attr("fill", d => colorScale(d))
-    .on("click", function(event, d) {
-        node.style("display", n => n.degree < d ? "none" : "");
-        nodeLabels.style("display", n => n.degree < d ? "none" : "");
-    });
-
-legend.append("text")
-    .attr("x", 70)
-    .attr("y", 4)
-    .text(d => `Degree > ${d}`)
-    .style("font-size", "12px")
-    .attr("cursor", "pointer")
-    .on("click", function(event, d) {
-        node.style("display", n => n.degree < d ? "none" : "");
-        nodeLabels.style("display", n => n.degree < d ? "none" : "");
-    });
-
-const degreeSlider = document.getElementById("degreeFilter");
-const degreeValueLabel = document.getElementById("degreeValue");
-
-degreeSlider.max = maxDegree;
-degreeSlider.addEventListener("input", function() {
-    const filterValue = +this.value;
-    degreeValueLabel.textContent = filterValue;
-    
-    node.style("display", n => n.degree < filterValue ? "none" : "");
-    nodeLabels.style("display", n => n.degree < filterValue ? "none" : "");
-});
-
-const linkWeightSlider = document.getElementById("linkWeightFilter");
-const linkWeightValueLabel = document.getElementById("linkWeightValue");
-
-linkWeightSlider.addEventListener("input", function() {
-    const filterValue = +this.value;
-    linkWeightValueLabel.textContent = filterValue;
-    
-    link.style("display", l => l.weight < filterValue ? "none" : "");
-});
+        function zoomed(event) {
+            graphContainer.attr("transform", event.transform);
+        }
 
 
-// Now that our nodes and links are defined, set the graph data in the simulation
-simulation.nodes(graph.nodes).on("tick", ticked);
-simulation.force("link").links(graph.links);
-
-function ticked() {
-    link.attr("x1", d => d.source.x)
-        .attr("y1", d => d.source.y)
-        .attr("x2", d => d.target.x)
-        .attr("y2", d => d.target.y);
-
-    linkOverlay.attr("x1", d => d.source.x)
-        .attr("y1", d => d.source.y)
-        .attr("x2", d => d.target.x)
-        .attr("y2", d => d.target.y);
-
-    node.attr("cx", d => d.x)
-        .attr("cy", d => d.y);
-
-    nodeLabels.attr("x", d => d.x)
-        .attr("y", d => d.y + 5 + sizeScale(d.degree));
-
-    
-}
-
-function dragstarted(event) {
-    if (!event.active) simulation.alphaTarget(0.3).restart();
-    event.subject.fx = event.subject.x;
-    event.subject.fy = event.subject.y;
-}
-
-function dragged(event) {
-    event.subject.fx = event.x;
-    event.subject.fy = event.y;
-}
-
-function dragended(event) {
-    if (!event.active) simulation.alphaTarget(0);
-    event.subject.fx = null;
-    event.subject.fy = null;
-}
-
-function zoomed(event) {
-    graphContainer.attr("transform", event.transform);
-}
-
-
-
-</script>
+    </script>
 </body>
+
 </html>
