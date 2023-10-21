@@ -46,14 +46,14 @@
         };
 
         // Calculate dynamic sizes based on total number of nodes and links
-        const nodeSizeBase = 50;  
+        const nodeSizeBase = 40;  
         const linkWidthBase = 8;  
         const nodeSize = nodeSizeBase / Math.sqrt(graph.nodes.length);
         const linkWidth = linkWidthBase / Math.sqrt(graph.links.length);
         const maxDegree = d3.max(graph.nodes, d => d.degree);
         const maxLinkWeight = d3.max(graph.links, d => d.weight);
         const colorScale = d3.scaleSequential(d3.interpolateBlues).domain([0, maxDegree]);
-        const sizeScale = d3.scaleSqrt().domain([0, maxDegree]).range([10, 30]);
+        const sizeScale = d3.scaleLinear().domain([0, maxDegree]).range([10, 40]);
         const linkWidthScale = d3.scaleSqrt().domain([0, maxLinkWeight]).range([0, 1]);
 
 
@@ -69,8 +69,8 @@ const svg = d3.select("body").append("svg")
 const graphContainer = svg.append("g");
 
 // Increase to spread nodes apart, decrease if they are too spread out
-const nodeDistance = 100 + graph.nodes.length * 0.7;
-const chargeStrength = -400 - graph.nodes.length * 5;
+const nodeDistance = 100 + graph.nodes.length * 2;
+const chargeStrength = -400 - graph.nodes.length * 17;
 
 // Create the simulation
 const simulation = d3.forceSimulation()
@@ -200,7 +200,7 @@ const nodeLabels = graphContainer.append("g")
     .selectAll("text")
     .data(graph.nodes)
     .enter().append("text")
-    .text(d => d.id)
+    .text(d => (d.id.split("/")[1].length > 15) ? d.id.split("/")[1].substring(0, 12) + "..." : d.id.split("/")[1])
     .attr("dx", -15)
     .attr("dy", 15);
 
