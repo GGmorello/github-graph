@@ -1,9 +1,5 @@
 from pyspark.sql import SparkSession
-from pyspark import SparkContext
-from pyspark.streaming import StreamingContext
 from pyspark.sql.functions import expr
-from pyspark.sql.window import Window
-import time
 from pathlib import Path
 from os.path import join
 
@@ -12,7 +8,6 @@ spark = SparkSession.builder \
     .getOrCreate()
 
 input_directory = "input_files/*"
-# input_directory_match = join(input_directory, "/*")
 output_directory = "output_files"
 checkpoint_directory = "checkpoints"
 

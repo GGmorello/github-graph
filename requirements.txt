@@ -1,1 +1,6 @@
-PyGithub
+Flask==3.0.0
+networkx==3.1
+PyGithub==2.1.1
+pyspark==3.5.0
+Requests==2.31.0
+tqdm==4.66.1
