@@ -27,7 +27,7 @@ You can then run the following command to install the needed packages from the `
 1. Navigate to the `src` directory
 2. Run the `python visualizer.py` command to start the visualization UI.
 3. Run the `python importer.py` command to move files from the data folder (scraper) to the streaming application
-4. Run the `python streamer.py` to start reading files from the input files directory
+4. Run the `spark-submit streamer.py` to start reading files from the input files directory
     - The moving of the files can also be done dynamically, i.e. in the case of a real streaming environment. The spark app reacts to changes in the directory and updates data as it runs.
 5. Run the `python exporter.py` command to export files to the visualizer.
 6. Browse the graph on your configured localhost address. On macOS, it should be `127.0.0.1` (see command line output for actual address when starting the visualizer)
